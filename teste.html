@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+</head>
+<body>
+    <div class="section">
+        <div class="container mt-5">
+            <div class="row">
+                <div class="col d-flex justify-content-center">
+                    <h1>Converter JSON para CSV</h1>
+                </div>
+            </div>
+            <div class="row d-flex justify-content-around mt-5">
+                <div class="col-lg-5">
+                    <div class="card">
+						<div class="card-header">JSON</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <textarea class="form-control" rows="10" id="json"></textarea>
+                                <small id="jsonMessage" class="form-text text-danger"></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center justify-content-lg-end mt-2 mb-2">
+                        <button id="clear" class="btn btn-secondary mx-1">Limpar</button>
+                        <button id="convert" class="btn btn-primary">Converter</button>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card">
+						<div class="card-header">CSV</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <textarea class="form-control" rows="10" id="csv"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="table-row" class="row my-3 d-none pb-5">
+                <div class="col-12">
+                    <hr>
+                    <div class="card">
+                        <div class="card-header">Tabela CSV</div>
+                        <div class="card-body">
+                            <table id="table" class="table table-bordered">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.onload = function() {
+            let json = document.querySelector('#json');
+            let csv = document.querySelector('#csv');
+            let jsonMessage = document.querySelector('#jsonMessage');
+
+            document.querySelector('#convert').addEventListener('click', function() {
+                let jsonValue = json.value;
+
+                if (jsonValue === '') {
+                    jsonError('Json vazio.');
+                } else {
+                    try {
+                        var jsonObject = JSON.parse(jsonValue);
+                    } catch (error) {
+                        jsonError('Json inválido.');
+                    }
+                }
+
+                // Se a variavel jsonObject existir, é pq o JSON é válido
+                if (typeof jsonObject != "undefined") {
+                    let jsonObjectIndex = Object.keys(jsonObject);
+                    let jsonObjectValue = Object.values(jsonObject);
+                    let csvLineIndex = '';
+                    let csvLineValue = '';
+
+                    tableClear();
+                    tableInit();
+
+                    jsonObjectIndex.forEach(function(element) {
+                        csvLineIndex += `${element},`;
+                        tableAddThead(element);
+                    });
+
+                    let matrizValue = [];
+                    jsonObjectValue.forEach((element, index) => {
+                         // Matriz para inverter os valores horizontal para vertical e vice versa
+                        if (Array.isArray(element)) {
+                            element.forEach((elementArray, indexElement) => {
+                                if (matrizValue[indexElement] != undefined) // Se já existe o indice na matriz, só insere o valor
+                                    matrizValue[indexElement].push(elementArray);
+                                else { // Se não existir o indice na matriz, cria o indice e coloca o valor 
+                                    matrizValue[indexElement] = [];
+                                    matrizValue[indexElement].push(elementArray);
+                                }
+                            });
+                        } else { // Se tem somente o valor, coloca no indice 0
+                            if (matrizValue[0] != undefined)
+                                matrizValue[0].push(element);
+                            else {
+                                matrizValue[0] = [];
+                                matrizValue[0].push(element);
+                            }
+                        }
+                    });
+
+                    matrizValue.forEach(function(elementArray) {
+                        tableAddTbodyTr();
+                        elementArray.forEach(function(element){
+                            csvLineValue += `"${element}",`;
+                            tableAddTbody(element);
+                        });
+                        csvLineValue = csvLineValue.slice(0, -1) + '\r\n';
+                    });
+
+                    csvLineIndex = csvLineIndex.slice(0, -1);
+                    
+                    csv.value = csvLineIndex + '\r\n' + csvLineValue;
+
+                    jsonSucess();
+                } 
+            });
+
+            document.querySelector('#clear').addEventListener('click', function() {
+                jsonClear();
+            });
+
+            function jsonSucess() {
+                document.querySelector('#jsonMessage').innerHTML = '';
+                document.querySelector('#json').classList.remove("border-danger");
+            }
+
+            function jsonError(message) {
+                document.querySelector('#json').classList.add("border-danger");
+                document.querySelector('#csv').value = '';
+                jsonMessage.innerHTML = message;
+                tableClear();
+            }
+
+            function jsonClear() {
+                document.querySelector('#json').value = '';
+                document.querySelector('#csv').value = '';
+                document.querySelector('#jsonMessage').innerHTML = '';
+                document.querySelector('#json').classList.remove("border-danger");
+                tableClear();
+            }
+
+            function tableInit() {
+                let tRow = document.querySelector('#table-row');
+                let tHead = document.querySelector('#table thead');
+                let trThead = document.createElement('tr');
+                tRow.classList.remove('d-none');
+                tHead.appendChild(trThead);
+            }
+
+            function tableAddThead(element) {
+                let tr = document.querySelector('#table thead tr');
+                let th = document.createElement('th');
+                tr.classList.add("border-dark");
+                tr.classList.add("bg-secondary");
+                tr.classList.add("text-light");
+                th.innerHTML = element;
+                tr.appendChild(th);
+            }
+
+            function tableAddTbody(element) {
+                let tr = document.querySelector('#table tbody tr:last-child');
+                let td = document.createElement('td');
+                td.innerHTML = element;
+                tr.appendChild(td);
+            }
+
+            function tableAddTbodyTr() {
+                let tBody = document.querySelector('#table tbody');
+                let trTbody = document.createElement('tr');
+                tBody.appendChild(trTbody);
+            }
+
+            function tableClear() {
+                if (document.querySelector('#table thead tr') != null)
+                    document.querySelector('#table thead tr').remove();
+                if (document.querySelector('#table tbody tr') != null) {
+                    let countTr = document.querySelectorAll('#table tbody tr').length;
+                    for (let i = 0; i < countTr; i++) {
+                        document.querySelectorAll('#table tbody tr')[0].remove();
+                    }
+                }
+                document.querySelector('#table-row').classList.add('d-none');
+                //{"name":"teste","salary":56000,"married":true}
+                //{"name": ["teste","teste2"],"salary": [56000,5],"married": [true,false]}
+            }
+        }
+    </script>
+</body>
+</html>
