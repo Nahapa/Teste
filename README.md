@@ -6,6 +6,12 @@
 - Verifica se é um json válido.
 - Verifica se o json esta vazio.
 
+## Melhorias
+- Tratar quando o valor for um objeto.
+
+## Observações
+- Esta responsivo.
+
 ## Exemplos de testes
 
 - {"name":"teste","salary":56000,"married":true}
